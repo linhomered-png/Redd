@@ -1,14 +1,14 @@
 import { useRef, useState } from "react";
-import type { Photo } from "../types";
+import type { MediaItem } from "../types";
 
 interface Props {
-  photos: Photo[];
-  onReorder: (photos: Photo[]) => void;
+  items: MediaItem[];
+  onReorder: (items: MediaItem[]) => void;
   onRemove: (id: string) => void;
   onDurationChange: (id: string, duration: number) => void;
 }
 
-export function PhotoList({ photos, onReorder, onRemove, onDurationChange }: Props) {
+export function PhotoList({ items, onReorder, onRemove, onDurationChange }: Props) {
   const dragIndex = useRef<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
@@ -18,7 +18,7 @@ export function PhotoList({ photos, onReorder, onRemove, onDurationChange }: Pro
       setOverIndex(null);
       return;
     }
-    const next = [...photos];
+    const next = [...items];
     const [moved] = next.splice(from, 1);
     next.splice(targetIndex, 0, moved);
     onReorder(next);
@@ -26,15 +26,15 @@ export function PhotoList({ photos, onReorder, onRemove, onDurationChange }: Pro
     setOverIndex(null);
   }
 
-  if (photos.length === 0) {
-    return <p className="empty-hint">还没有照片，先在上方添加吧</p>;
+  if (items.length === 0) {
+    return <p className="empty-hint">還沒有照片或影片，先在上方加入吧</p>;
   }
 
   return (
     <ul className="photo-list">
-      {photos.map((photo, index) => (
+      {items.map((item, index) => (
         <li
-          key={photo.id}
+          key={item.id}
           className={`photo-item${overIndex === index ? " drag-over" : ""}`}
           draggable
           onDragStart={() => (dragIndex.current = index)}
@@ -48,27 +48,37 @@ export function PhotoList({ photos, onReorder, onRemove, onDurationChange }: Pro
           <span className="drag-handle" aria-hidden="true">
             ⠿
           </span>
-          <img src={photo.url} alt="" className="thumb" />
+          {item.kind === "video" ? (
+            <video src={item.url} className="thumb" muted playsInline preload="metadata" />
+          ) : (
+            <img src={item.url} alt="" className="thumb" />
+          )}
           <span className="photo-index">{index + 1}</span>
+          <span className="kind-badge">{item.kind === "video" ? "影片" : "照片"}</span>
           <label className="duration-field">
-            时长
+            {item.kind === "video" ? "擷取" : "時長"}
             <input
               type="number"
               min={0.2}
-              max={30}
+              max={item.kind === "video" && item.sourceDuration ? item.sourceDuration : 30}
               step={0.1}
-              value={photo.duration}
+              value={item.duration}
               onChange={(e) =>
-                onDurationChange(photo.id, Math.max(0.2, Number(e.target.value) || 0.2))
+                onDurationChange(item.id, Math.max(0.2, Number(e.target.value) || 0.2))
               }
             />
             秒
+            {item.kind === "video" && item.sourceDuration && (
+              <span className="source-duration-hint">
+                （原長 {item.sourceDuration.toFixed(1)}s）
+              </span>
+            )}
           </label>
           <button
             type="button"
             className="remove-btn"
-            onClick={() => onRemove(photo.id)}
-            aria-label="删除照片"
+            onClick={() => onRemove(item.id)}
+            aria-label="刪除"
           >
             ✕
           </button>

@@ -1,8 +1,13 @@
-export interface Photo {
+export type MediaKind = "image" | "video";
+
+export interface MediaItem {
   id: string;
   file: File;
+  kind: MediaKind;
   url: string;
   duration: number;
+  /** Actual clip length in seconds, only known for videos once metadata loads. */
+  sourceDuration: number | null;
 }
 
 export type TransitionType = "none" | "fade";

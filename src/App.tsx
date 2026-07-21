@@ -1,13 +1,14 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import "./App.css";
 import { PhotoUploader } from "./components/PhotoUploader";
 import { PhotoList } from "./components/PhotoList";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { VideoResult } from "./components/VideoResult";
-import type { Photo, VideoSettings } from "./types";
+import type { MediaItem, VideoSettings } from "./types";
 import { loadFfmpeg } from "./utils/ffmpegClient";
 import { buildVideo } from "./utils/buildVideo";
 import type { BuildProgress } from "./utils/buildVideo";
+import { readVideoDuration } from "./utils/videoMeta";
 
 const DEFAULT_SETTINGS: VideoSettings = {
   transition: "fade",
@@ -17,10 +18,12 @@ const DEFAULT_SETTINGS: VideoSettings = {
   musicFile: null,
 };
 
+const MAX_VIDEO_CLIP_DURATION = 8;
+
 let nextId = 0;
 
 function App() {
-  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [items, setItems] = useState<MediaItem[]>([]);
   const [settings, setSettings] = useState<VideoSettings>(DEFAULT_SETTINGS);
   const [status, setStatus] = useState<"idle" | "loading-ffmpeg" | "building" | "done" | "error">(
     "idle",
@@ -28,20 +31,35 @@ function App() {
   const [progress, setProgress] = useState<BuildProgress>({ stage: "preparing", ratio: 0 });
   const [errorMessage, setErrorMessage] = useState("");
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const ffmpegLoadedRef = useRef(false);
 
   const addFiles = useCallback((files: File[]) => {
-    const newPhotos: Photo[] = files.map((file) => ({
-      id: `p${nextId++}`,
+    const newItems: MediaItem[] = files.map((file) => ({
+      id: `m${nextId++}`,
       file,
+      kind: file.type.startsWith("video/") ? "video" : "image",
       url: URL.createObjectURL(file),
       duration: 3,
+      sourceDuration: null,
     }));
-    setPhotos((prev) => [...prev, ...newPhotos]);
+    setItems((prev) => [...prev, ...newItems]);
+
+    for (const item of newItems) {
+      if (item.kind !== "video") continue;
+      readVideoDuration(item.file)
+        .then((duration) => {
+          const clamped = Math.min(duration, MAX_VIDEO_CLIP_DURATION);
+          setItems((prev) =>
+            prev.map((p) =>
+              p.id === item.id ? { ...p, duration: clamped, sourceDuration: duration } : p,
+            ),
+          );
+        })
+        .catch((err) => console.error(err));
+    }
   }, []);
 
-  const removePhoto = useCallback((id: string) => {
-    setPhotos((prev) => {
+  const removeItem = useCallback((id: string) => {
+    setItems((prev) => {
       const target = prev.find((p) => p.id === id);
       if (target) URL.revokeObjectURL(target.url);
       return prev.filter((p) => p.id !== id);
@@ -49,24 +67,28 @@ function App() {
   }, []);
 
   const updateDuration = useCallback((id: string, duration: number) => {
-    setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, duration } : p)));
+    setItems((prev) => prev.map((p) => (p.id === id ? { ...p, duration } : p)));
   }, []);
 
   const applyDurationToAll = useCallback((duration: number) => {
-    setPhotos((prev) => prev.map((p) => ({ ...p, duration })));
+    setItems((prev) =>
+      prev.map((p) => ({
+        ...p,
+        duration: p.sourceDuration ? Math.min(duration, p.sourceDuration) : duration,
+      })),
+    );
   }, []);
 
   async function handleGenerate() {
-    if (photos.length === 0) return;
+    if (items.length === 0) return;
     setErrorMessage("");
     try {
       setStatus("loading-ffmpeg");
       const ffmpeg = await loadFfmpeg((message) => console.log("[ffmpeg]", message));
-      ffmpegLoadedRef.current = true;
 
       setStatus("building");
       setProgress({ stage: "preparing", ratio: 0 });
-      const blob = await buildVideo(ffmpeg, photos, settings, setProgress);
+      const blob = await buildVideo(ffmpeg, items, settings, setProgress);
       const url = URL.createObjectURL(blob);
       setVideoUrl(url);
       setStatus("done");
@@ -88,8 +110,10 @@ function App() {
   return (
     <div className="app">
       <header>
-        <h1>照片转视频</h1>
-        <p className="subtitle">上传照片，设置时长与转场，一键生成视频 — 全部在浏览器本地完成</p>
+        <h1>照片轉影片</h1>
+        <p className="subtitle">
+          上傳照片與影片片段，設定時長與轉場，一鍵生成影片 — 全部在瀏覽器本地完成
+        </p>
       </header>
 
       {status === "done" && videoUrl ? (
@@ -99,9 +123,9 @@ function App() {
           <PhotoUploader onFilesAdded={addFiles} />
 
           <PhotoList
-            photos={photos}
-            onReorder={setPhotos}
-            onRemove={removePhoto}
+            items={items}
+            onReorder={setItems}
+            onRemove={removeItem}
             onDurationChange={updateDuration}
           />
 
@@ -115,20 +139,20 @@ function App() {
             <button
               type="button"
               className="primary-btn"
-              disabled={photos.length === 0 || isBusy}
+              disabled={items.length === 0 || isBusy}
               onClick={handleGenerate}
             >
-              {isBusy ? "生成中…" : "生成视频"}
+              {isBusy ? "生成中…" : "生成影片"}
             </button>
 
             {isBusy && (
               <div className="progress">
                 <div className="progress-label">
                   {status === "loading-ffmpeg"
-                    ? "正在加载视频引擎…"
+                    ? "正在載入影片引擎…"
                     : progress.stage === "preparing"
-                      ? "正在处理照片…"
-                      : "正在合成视频…"}
+                      ? "正在處理素材…"
+                      : "正在合成影片…"}
                 </div>
                 <div className="progress-track">
                   <div
@@ -139,7 +163,7 @@ function App() {
               </div>
             )}
 
-            {status === "error" && <p className="error-msg">生成失败：{errorMessage}</p>}
+            {status === "error" && <p className="error-msg">生成失敗：{errorMessage}</p>}
           </div>
         </>
       )}

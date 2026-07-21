@@ -11,7 +11,9 @@ export function PhotoUploader({ onFilesAdded }: Props) {
 
   function handleFiles(fileList: FileList | null) {
     if (!fileList) return;
-    const files = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
+    const files = Array.from(fileList).filter(
+      (f) => f.type.startsWith("image/") || f.type.startsWith("video/"),
+    );
     if (files.length) onFilesAdded(files);
   }
 
@@ -34,12 +36,12 @@ export function PhotoUploader({ onFilesAdded }: Props) {
       role="button"
       tabIndex={0}
     >
-      <p>拖拽照片到这里，或点击选择文件</p>
-      <p className="uploader-hint">支持一次选择多张 JPG / PNG 图片</p>
+      <p>拖曳照片或影片到這裡，或點擊選擇檔案</p>
+      <p className="uploader-hint">支援一次選擇多張 JPG / PNG 圖片與 MP4 / MOV 影片片段</p>
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         multiple
         hidden
         onChange={(e) => {

@@ -9,10 +9,10 @@ export function VideoResult({ videoUrl, onDiscard }: Props) {
       <video src={videoUrl} controls className="video-preview" />
       <div className="video-actions">
         <a className="primary-btn" href={videoUrl} download="photos-video.mp4">
-          下载视频
+          下載影片
         </a>
         <button type="button" className="link-btn" onClick={onDiscard}>
-          重新制作
+          重新製作
         </button>
       </div>
     </div>

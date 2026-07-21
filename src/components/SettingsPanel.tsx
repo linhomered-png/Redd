@@ -1,9 +1,9 @@
 import type { TransitionType, VideoSettings } from "../types";
 
 const RESOLUTIONS: { label: string; width: number; height: number }[] = [
-  { label: "720p 横屏 (1280×720)", width: 1280, height: 720 },
-  { label: "1080p 横屏 (1920×1080)", width: 1920, height: 1080 },
-  { label: "竖屏 (720×1280)", width: 720, height: 1280 },
+  { label: "720p 橫式 (1280×720)", width: 1280, height: 720 },
+  { label: "1080p 橫式 (1920×1080)", width: 1920, height: 1080 },
+  { label: "直式 (720×1280)", width: 720, height: 1280 },
   { label: "方形 (1080×1080)", width: 1080, height: 1080 },
 ];
 
@@ -20,21 +20,21 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
     <div className="settings-panel">
       <div className="settings-row">
         <label>
-          转场效果
+          轉場效果
           <select
             value={settings.transition}
             onChange={(e) =>
               onChange({ ...settings, transition: e.target.value as TransitionType })
             }
           >
-            <option value="none">无转场（直接切换）</option>
+            <option value="none">無轉場（直接切換）</option>
             <option value="fade">淡入淡出</option>
           </select>
         </label>
 
         {settings.transition === "fade" && (
           <label>
-            转场时长
+            轉場時長
             <input
               type="number"
               min={0.2}
@@ -55,7 +55,7 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
 
       <div className="settings-row">
         <label>
-          视频分辨率
+          影片解析度
           <select
             value={resolutionValue}
             onChange={(e) => {
@@ -74,7 +74,7 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
         </label>
 
         <label>
-          帧率
+          畫格率
           <select
             value={settings.fps}
             onChange={(e) => onChange({ ...settings, fps: Number(e.target.value) })}
@@ -87,7 +87,7 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
 
       <div className="settings-row">
         <label>
-          批量设置每张时长
+          批量設定照片時長
           <input
             type="number"
             min={0.2}
@@ -103,7 +103,7 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
         </label>
 
         <label>
-          背景音乐（可选）
+          背景音樂（可選）
           <input
             type="file"
             accept="audio/*"
@@ -118,10 +118,13 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
             className="link-btn"
             onClick={() => onChange({ ...settings, musicFile: null })}
           >
-            移除音乐
+            移除音樂
           </button>
         )}
       </div>
+      <p className="settings-hint">
+        提示：影片片段的原始聲音會被靜音，只有這裡上傳的背景音樂會被保留。
+      </p>
     </div>
   );
 }

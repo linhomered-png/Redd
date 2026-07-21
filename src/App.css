@@ -106,6 +106,15 @@ header h1 {
   text-align: center;
 }
 
+.kind-badge {
+  font-size: 0.7rem;
+  color: #4a7dff;
+  background: #eef3ff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
 .duration-field {
   margin-left: auto;
   display: flex;
@@ -120,6 +129,11 @@ header h1 {
   padding: 4px 6px;
   border: 1px solid #ccd2db;
   border-radius: 6px;
+}
+
+.source-duration-hint {
+  color: #999;
+  font-size: 0.78rem;
 }
 
 .remove-btn {
@@ -163,6 +177,12 @@ header h1 {
   border: 1px solid #ccd2db;
   border-radius: 6px;
   font-size: 0.95rem;
+}
+
+.settings-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #999;
 }
 
 .generate-bar {
