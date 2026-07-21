@@ -1,0 +1,251 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f5f6f8;
+  color: #1a1a1a;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+}
+
+.app {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+header h1 {
+  font-size: 1.9rem;
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  color: #666;
+  margin: 0;
+}
+
+.uploader {
+  border: 2px dashed #b9c0cc;
+  border-radius: 12px;
+  padding: 32px 16px;
+  text-align: center;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.uploader.dragging {
+  border-color: #4a7dff;
+  background: #eef3ff;
+}
+
+.uploader p {
+  margin: 4px 0;
+}
+
+.uploader-hint {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.empty-hint {
+  color: #888;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.photo-list {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.photo-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.photo-item.drag-over {
+  outline: 2px solid #4a7dff;
+}
+
+.drag-handle {
+  cursor: grab;
+  color: #aaa;
+  font-size: 1.1rem;
+}
+
+.thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.photo-index {
+  font-size: 0.8rem;
+  color: #999;
+  width: 20px;
+  text-align: center;
+}
+
+.duration-field {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.duration-field input {
+  width: 60px;
+  padding: 4px 6px;
+  border: 1px solid #ccd2db;
+  border-radius: 6px;
+}
+
+.remove-btn {
+  border: none;
+  background: none;
+  color: #b33;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 6px;
+}
+
+.settings-panel {
+  margin-top: 24px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+}
+
+.settings-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.settings-row select,
+.settings-row input[type="number"],
+.settings-row input[type="file"] {
+  padding: 6px 8px;
+  border: 1px solid #ccd2db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.generate-bar {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.primary-btn {
+  background: #4a7dff;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 32px;
+  font-size: 1rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.primary-btn:disabled {
+  background: #b8c6ee;
+  cursor: not-allowed;
+}
+
+.progress {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.progress-label {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.progress-track {
+  background: #e4e7ec;
+  border-radius: 6px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: #4a7dff;
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.error-msg {
+  color: #c0392b;
+  font-size: 0.9rem;
+}
+
+.video-result {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.video-preview {
+  width: 100%;
+  max-width: 640px;
+  border-radius: 12px;
+  background: #000;
+}
+
+.video-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #4a7dff;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 0.9rem;
+}
