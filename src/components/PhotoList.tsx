@@ -1,14 +1,23 @@
 import { useRef, useState } from "react";
 import type { MediaItem } from "../types";
 
+type TextCardPatch = Partial<Pick<MediaItem, "text" | "bgColor" | "textColor">>;
+
 interface Props {
   items: MediaItem[];
   onReorder: (items: MediaItem[]) => void;
   onRemove: (id: string) => void;
   onDurationChange: (id: string, duration: number) => void;
+  onTextCardChange: (id: string, patch: TextCardPatch) => void;
 }
 
-export function PhotoList({ items, onReorder, onRemove, onDurationChange }: Props) {
+export function PhotoList({
+  items,
+  onReorder,
+  onRemove,
+  onDurationChange,
+  onTextCardChange,
+}: Props) {
   const dragIndex = useRef<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
@@ -45,43 +54,80 @@ export function PhotoList({ items, onReorder, onRemove, onDurationChange }: Prop
           onDragLeave={() => setOverIndex((i) => (i === index ? null : i))}
           onDrop={() => handleDrop(index)}
         >
-          <span className="drag-handle" aria-hidden="true">
-            ⠿
-          </span>
-          {item.kind === "video" ? (
-            <video src={item.url} className="thumb" muted playsInline preload="metadata" />
-          ) : (
-            <img src={item.url} alt="" className="thumb" />
-          )}
-          <span className="photo-index">{index + 1}</span>
-          <span className="kind-badge">{item.kind === "video" ? "影片" : "照片"}</span>
-          <label className="duration-field">
-            {item.kind === "video" ? "擷取" : "時長"}
-            <input
-              type="number"
-              min={0.2}
-              max={item.kind === "video" && item.sourceDuration ? item.sourceDuration : 30}
-              step={0.1}
-              value={item.duration}
-              onChange={(e) =>
-                onDurationChange(item.id, Math.max(0.2, Number(e.target.value) || 0.2))
-              }
-            />
-            秒
-            {item.kind === "video" && item.sourceDuration && (
-              <span className="source-duration-hint">
-                （原長 {item.sourceDuration.toFixed(1)}s）
-              </span>
+          <div className="photo-item-main">
+            <span className="drag-handle" aria-hidden="true">
+              ⠿
+            </span>
+            {item.kind === "video" ? (
+              <video src={item.url} className="thumb" muted playsInline preload="metadata" />
+            ) : item.kind === "text" ? (
+              <div
+                className="thumb text-thumb"
+                style={{ background: item.bgColor ?? "#12233f", color: item.textColor ?? "#fff" }}
+              >
+                字卡
+              </div>
+            ) : (
+              <img src={item.url} alt="" className="thumb" />
             )}
-          </label>
-          <button
-            type="button"
-            className="remove-btn"
-            onClick={() => onRemove(item.id)}
-            aria-label="刪除"
-          >
-            ✕
-          </button>
+            <span className="photo-index">{index + 1}</span>
+            <span className="kind-badge">
+              {item.kind === "video" ? "影片" : item.kind === "text" ? "文字卡" : "照片"}
+            </span>
+            <label className="duration-field">
+              {item.kind === "video" ? "擷取" : "時長"}
+              <input
+                type="number"
+                min={0.2}
+                max={item.kind === "video" && item.sourceDuration ? item.sourceDuration : 30}
+                step={0.1}
+                value={item.duration}
+                onChange={(e) =>
+                  onDurationChange(item.id, Math.max(0.2, Number(e.target.value) || 0.2))
+                }
+              />
+              秒
+              {item.kind === "video" && item.sourceDuration && (
+                <span className="source-duration-hint">
+                  （原長 {item.sourceDuration.toFixed(1)}s）
+                </span>
+              )}
+            </label>
+            <button
+              type="button"
+              className="remove-btn"
+              onClick={() => onRemove(item.id)}
+              aria-label="刪除"
+            >
+              ✕
+            </button>
+          </div>
+
+          {item.kind === "text" && (
+            <div className="text-card-inline-edit">
+              <textarea
+                value={item.text ?? ""}
+                onChange={(e) => onTextCardChange(item.id, { text: e.target.value })}
+                rows={2}
+              />
+              <label className="color-field">
+                底色
+                <input
+                  type="color"
+                  value={item.bgColor ?? "#12233f"}
+                  onChange={(e) => onTextCardChange(item.id, { bgColor: e.target.value })}
+                />
+              </label>
+              <label className="color-field">
+                文字色
+                <input
+                  type="color"
+                  value={item.textColor ?? "#ffffff"}
+                  onChange={(e) => onTextCardChange(item.id, { textColor: e.target.value })}
+                />
+              </label>
+            </div>
+          )}
         </li>
       ))}
     </ul>

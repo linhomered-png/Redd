@@ -2,6 +2,7 @@ import type { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import type { MediaItem, VideoSettings } from "../types";
 import { renderPhotoToFrame } from "./resizeImage";
+import { renderTextCardToFrame } from "./textCard";
 
 export interface BuildProgress {
   stage: "preparing" | "encoding" | "done";
@@ -27,14 +28,20 @@ export async function buildVideo(
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    if (item.kind === "image") {
-      const frame = await renderPhotoToFrame(item.file, width, height);
-      const name = `clip${i}.jpg`;
-      await ffmpeg.writeFile(name, await fetchFile(frame));
+    if (item.kind === "video") {
+      const name = `clip${i}.${extensionFromFile(item.file as File, "mp4")}`;
+      await ffmpeg.writeFile(name, await fetchFile(item.file as File));
       inputNames.push(name);
     } else {
-      const name = `clip${i}.${extensionFromFile(item.file, "mp4")}`;
-      await ffmpeg.writeFile(name, await fetchFile(item.file));
+      const frame =
+        item.kind === "text"
+          ? await renderTextCardToFrame(item.text ?? "", width, height, {
+              bgColor: item.bgColor ?? "#12233f",
+              textColor: item.textColor ?? "#ffffff",
+            })
+          : await renderPhotoToFrame(item.file as File, width, height);
+      const name = `clip${i}.${item.kind === "text" ? "png" : "jpg"}`;
+      await ffmpeg.writeFile(name, await fetchFile(frame));
       inputNames.push(name);
     }
     onProgress({ stage: "preparing", ratio: (i + 1) / items.length });
@@ -90,10 +97,10 @@ function buildFfmpegArgs(
 
   for (let i = 0; i < items.length; i++) {
     const clipLen = items[i].duration + t;
-    if (items[i].kind === "image") {
-      args.push("-loop", "1", "-t", `${clipLen}`, "-i", inputNames[i]);
-    } else {
+    if (items[i].kind === "video") {
       args.push("-t", `${clipLen}`, "-i", inputNames[i]);
+    } else {
+      args.push("-loop", "1", "-t", `${clipLen}`, "-i", inputNames[i]);
     }
   }
   if (musicName) {

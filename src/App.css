@@ -73,8 +73,8 @@ header h1 {
 
 .photo-item {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   background: #fff;
   border-radius: 10px;
   padding: 8px 12px;
@@ -83,6 +83,12 @@ header h1 {
 
 .photo-item.drag-over {
   outline: 2px solid #4a7dff;
+}
+
+.photo-item-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .drag-handle {
@@ -143,6 +149,87 @@ header h1 {
   cursor: pointer;
   font-size: 1rem;
   padding: 4px 6px;
+}
+
+.text-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.text-card-inline-edit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 66px;
+}
+
+.text-card-inline-edit textarea {
+  flex: 1;
+  resize: vertical;
+  padding: 6px 8px;
+  border: 1px solid #ccd2db;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.text-card-editor {
+  margin-top: 16px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.text-card-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.text-card-editor-row textarea {
+  flex: 1;
+  resize: vertical;
+  padding: 8px 10px;
+  border: 1px solid #ccd2db;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.color-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: #666;
+}
+
+.color-field input[type="color"] {
+  width: 36px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #ccd2db;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  background: #eef3ff;
+  color: #4a7dff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .settings-panel {

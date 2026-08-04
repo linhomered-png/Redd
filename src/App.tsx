@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import "./App.css";
 import { PhotoUploader } from "./components/PhotoUploader";
 import { PhotoList } from "./components/PhotoList";
+import { TextCardEditor } from "./components/TextCardEditor";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { VideoResult } from "./components/VideoResult";
 import type { MediaItem, VideoSettings } from "./types";
@@ -9,6 +10,7 @@ import { loadFfmpeg } from "./utils/ffmpegClient";
 import { buildVideo } from "./utils/buildVideo";
 import type { BuildProgress } from "./utils/buildVideo";
 import { readVideoDuration } from "./utils/videoMeta";
+import { RECRUITMENT_TEMPLATE } from "./utils/templates";
 
 const DEFAULT_SETTINGS: VideoSettings = {
   transition: "fade",
@@ -44,7 +46,7 @@ function App() {
     setItems((prev) => [...prev, ...newItems]);
 
     for (const item of newItems) {
-      if (item.kind !== "video") continue;
+      if (item.kind !== "video" || !item.file) continue;
       readVideoDuration(item.file)
         .then((duration) => {
           const clamped = Math.min(duration, MAX_VIDEO_CLIP_DURATION);
@@ -61,7 +63,7 @@ function App() {
   const removeItem = useCallback((id: string) => {
     setItems((prev) => {
       const target = prev.find((p) => p.id === id);
-      if (target) URL.revokeObjectURL(target.url);
+      if (target?.url) URL.revokeObjectURL(target.url);
       return prev.filter((p) => p.id !== id);
     });
   }, []);
@@ -78,6 +80,49 @@ function App() {
       })),
     );
   }, []);
+
+  const addTextCard = useCallback((text: string, bgColor: string, textColor: string) => {
+    setItems((prev) => [
+      ...prev,
+      {
+        id: `m${nextId++}`,
+        file: null,
+        kind: "text",
+        url: "",
+        duration: 3,
+        sourceDuration: null,
+        text,
+        bgColor,
+        textColor,
+      },
+    ]);
+  }, []);
+
+  const applyRecruitmentTemplate = useCallback(() => {
+    setItems((prev) => [
+      ...prev,
+      ...RECRUITMENT_TEMPLATE.map(
+        (card): MediaItem => ({
+          id: `m${nextId++}`,
+          file: null,
+          kind: "text",
+          url: "",
+          duration: card.duration,
+          sourceDuration: null,
+          text: card.text,
+          bgColor: card.bgColor,
+          textColor: card.textColor,
+        }),
+      ),
+    ]);
+  }, []);
+
+  const updateTextCard = useCallback(
+    (id: string, patch: Partial<Pick<MediaItem, "text" | "bgColor" | "textColor">>) => {
+      setItems((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    },
+    [],
+  );
 
   async function handleGenerate() {
     if (items.length === 0) return;
@@ -122,11 +167,14 @@ function App() {
         <>
           <PhotoUploader onFilesAdded={addFiles} />
 
+          <TextCardEditor onAdd={addTextCard} onApplyTemplate={applyRecruitmentTemplate} />
+
           <PhotoList
             items={items}
             onReorder={setItems}
             onRemove={removeItem}
             onDurationChange={updateDuration}
+            onTextCardChange={updateTextCard}
           />
 
           <SettingsPanel
