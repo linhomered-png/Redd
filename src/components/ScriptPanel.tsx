@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import type { NarrationResult } from "../types";
 import { splitIntoCaptionSentences } from "../utils/scriptParse";
-import { isNarrationCaptureSupported, listPreferredVoices, recordNarration } from "../utils/speech";
+import {
+  estimateNarrationTimings,
+  isNarrationCaptureSupported,
+  listPreferredVoices,
+  recordNarration,
+} from "../utils/speech";
+
+type VoiceoverMode = "tts" | "silent";
 
 interface Props {
   scriptText: string;
@@ -11,10 +18,12 @@ interface Props {
 }
 
 export function ScriptPanel({ scriptText, onScriptChange, narration, onNarrationChange }: Props) {
+  const [voiceoverMode, setVoiceoverMode] = useState<VoiceoverMode>("tts");
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceURI, setVoiceURI] = useState("");
   const [rate, setRate] = useState(1);
   const [pitch, setPitch] = useState(1);
+  const [charsPerSecond, setCharsPerSecond] = useState(4.5);
   const [isRecording, setIsRecording] = useState(false);
   const [progressText, setProgressText] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -35,7 +44,7 @@ export function ScriptPanel({ scriptText, onScriptChange, narration, onNarration
   }, []);
 
   const narrationUrl = useMemo(
-    () => (narration ? URL.createObjectURL(narration.audioFile) : null),
+    () => (narration?.audioFile ? URL.createObjectURL(narration.audioFile) : null),
     [narration],
   );
   useEffect(() => {
@@ -69,6 +78,13 @@ export function ScriptPanel({ scriptText, onScriptChange, narration, onNarration
     }
   }
 
+  function handleEstimate() {
+    if (sentences.length === 0) return;
+    setErrorMessage("");
+    const result = estimateNarrationTimings(sentences, { charsPerSecond });
+    onNarrationChange(result);
+  }
+
   return (
     <div className="script-panel">
       <label className="script-label">
@@ -80,7 +96,7 @@ export function ScriptPanel({ scriptText, onScriptChange, narration, onNarration
             onScriptChange(e.target.value);
             onNarrationChange(null);
           }}
-          placeholder="貼上完整逐字稿，App 會自動依標點斷句、逐句合成語音，並生成逐字彈出的字幕動畫"
+          placeholder="貼上完整逐字稿，App 會自動依標點斷句，並生成逐字彈出的字幕動畫"
           rows={8}
         />
       </label>
@@ -90,73 +106,136 @@ export function ScriptPanel({ scriptText, onScriptChange, narration, onNarration
           : "尚未輸入逐字稿"}
       </p>
 
-      {!supported && (
-        <p className="error-msg">
-          此瀏覽器不支援自動錄製旁白（需要 getDisplayMedia 分頁音訊擷取），請改用電腦版
-          Chrome 或 Edge，或改用自行上傳配音檔的方式製作。
-        </p>
-      )}
-
-      <div className="settings-row">
-        <label>
-          語音
-          <select value={voiceURI} onChange={(e) => setVoiceURI(e.target.value)} disabled={voices.length === 0}>
-            {voices.length === 0 && <option value="">（無可用語音）</option>}
-            {voices.map((v) => (
-              <option key={v.voiceURI} value={v.voiceURI}>
-                {v.name} ({v.lang})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          語速 {rate.toFixed(2)}
-          <input
-            type="range"
-            min={0.7}
-            max={1.3}
-            step={0.05}
-            value={rate}
-            onChange={(e) => setRate(Number(e.target.value))}
-          />
-        </label>
-        <label>
-          音高 {pitch.toFixed(2)}
-          <input
-            type="range"
-            min={0.7}
-            max={1.3}
-            step={0.05}
-            value={pitch}
-            onChange={(e) => setPitch(Number(e.target.value))}
-          />
-        </label>
-      </div>
-
-      <div className="settings-row">
+      <div className="mode-switch voiceover-switch" role="tablist">
         <button
           type="button"
-          className="primary-btn"
-          disabled={!supported || sentences.length === 0 || isRecording}
-          onClick={handleRecord}
+          className={`mode-btn${voiceoverMode === "tts" ? " active" : ""}`}
+          onClick={() => {
+            setVoiceoverMode("tts");
+            onNarrationChange(null);
+          }}
         >
-          {isRecording ? "錄製中…" : narration ? "重新產生旁白" : "產生旁白錄音"}
+          有旁白配音
         </button>
-        {progressText && <span className="settings-hint">{progressText}</span>}
+        <button
+          type="button"
+          className={`mode-btn${voiceoverMode === "silent" ? " active" : ""}`}
+          onClick={() => {
+            setVoiceoverMode("silent");
+            onNarrationChange(null);
+          }}
+        >
+          不要旁白，只要字幕
+        </button>
       </div>
 
-      {errorMessage && <p className="error-msg">錄製失敗：{errorMessage}</p>}
+      {voiceoverMode === "tts" ? (
+        <>
+          {!supported && (
+            <p className="error-msg">
+              此瀏覽器不支援自動錄製旁白（需要 getDisplayMedia 分頁音訊擷取），請改用電腦版
+              Chrome 或 Edge，或改選「不要旁白，只要字幕」。
+            </p>
+          )}
 
-      {narration && narrationUrl && (
-        <div className="narration-preview">
-          <audio src={narrationUrl} controls />
+          <div className="settings-row">
+            <label>
+              語音
+              <select value={voiceURI} onChange={(e) => setVoiceURI(e.target.value)} disabled={voices.length === 0}>
+                {voices.length === 0 && <option value="">（無可用語音）</option>}
+                {voices.map((v) => (
+                  <option key={v.voiceURI} value={v.voiceURI}>
+                    {v.name} ({v.lang})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              語速 {rate.toFixed(2)}
+              <input
+                type="range"
+                min={0.7}
+                max={1.3}
+                step={0.05}
+                value={rate}
+                onChange={(e) => setRate(Number(e.target.value))}
+              />
+            </label>
+            <label>
+              音高 {pitch.toFixed(2)}
+              <input
+                type="range"
+                min={0.7}
+                max={1.3}
+                step={0.05}
+                value={pitch}
+                onChange={(e) => setPitch(Number(e.target.value))}
+              />
+            </label>
+          </div>
+
+          <div className="settings-row">
+            <button
+              type="button"
+              className="primary-btn"
+              disabled={!supported || sentences.length === 0 || isRecording}
+              onClick={handleRecord}
+            >
+              {isRecording ? "錄製中…" : narration?.audioFile ? "重新產生旁白" : "產生旁白錄音"}
+            </button>
+            {progressText && <span className="settings-hint">{progressText}</span>}
+          </div>
+
+          {errorMessage && <p className="error-msg">錄製失敗：{errorMessage}</p>}
+
+          {narration?.audioFile && narrationUrl && (
+            <div className="narration-preview">
+              <audio src={narrationUrl} controls />
+              <p className="settings-hint">
+                旁白長度 {narration.duration.toFixed(1)} 秒 ·{" "}
+                {narration.timingSource === "boundary"
+                  ? "已取得逐字時間軸"
+                  : "此瀏覽器未回報逐字時間，字幕改用估算時間對齊"}
+              </p>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
           <p className="settings-hint">
-            旁白長度 {narration.duration.toFixed(1)} 秒 ·{" "}
-            {narration.timingSource === "boundary"
-              ? "已取得逐字時間軸"
-              : "此瀏覽器未回報逐字時間，字幕改用估算時間對齊"}
+            不錄製任何聲音，字幕出現的節奏改用固定的閱讀速度估算。生成的影片沒有聲音（若在下方
+            設定背景音樂，音樂仍會加進去）。任何瀏覽器都能用。
           </p>
-        </div>
+          <div className="settings-row">
+            <label>
+              字幕速度（每秒 {charsPerSecond.toFixed(1)} 字）
+              <input
+                type="range"
+                min={2.5}
+                max={7}
+                step={0.5}
+                value={charsPerSecond}
+                onChange={(e) => setCharsPerSecond(Number(e.target.value))}
+              />
+            </label>
+          </div>
+          <div className="settings-row">
+            <button
+              type="button"
+              className="primary-btn"
+              disabled={sentences.length === 0}
+              onClick={handleEstimate}
+            >
+              {narration && !narration.audioFile ? "重新產生字幕時間軸" : "產生字幕時間軸"}
+            </button>
+          </div>
+          {narration && !narration.audioFile && (
+            <p className="settings-hint">
+              字幕時間軸已產生，共 {narration.sentences.length} 句，預估總長{" "}
+              {narration.duration.toFixed(1)} 秒（無旁白聲音）
+            </p>
+          )}
+        </>
       )}
     </div>
   );

@@ -67,6 +67,25 @@ function computeUnitRanges(
   return ranges;
 }
 
+/** Spreads reveal units evenly across [start, end], weighted by character count.
+ * Used both as the no-boundary-events fallback during real narration recording,
+ * and as the whole timing basis for the no-narration "estimated speed" mode. */
+function estimateWordTimingsForSentence(
+  units: string[],
+  start: number,
+  end: number,
+): CaptionWord[] {
+  const totalChars = units.reduce((sum, u) => sum + u.length, 0) || 1;
+  const span = Math.max(0, end - start);
+  let acc = 0;
+  return units.map((unit) => {
+    const wordStart = start + (acc / totalChars) * span;
+    acc += unit.length;
+    const wordEnd = start + (acc / totalChars) * span;
+    return { text: unit, start: wordStart, end: wordEnd };
+  });
+}
+
 function buildWordTimings(
   ranges: { start: number; end: number }[],
   units: string[],
@@ -75,17 +94,9 @@ function buildWordTimings(
   sentenceEnd: number,
 ): CaptionWord[] {
   if (boundaryEvents.length === 0) {
-    // No word-boundary events from this browser/voice: spread units evenly across
-    // the measured sentence duration, weighted by character count.
-    const totalChars = units.reduce((sum, u) => sum + u.length, 0) || 1;
-    const span = Math.max(0, sentenceEnd - sentenceStart);
-    let acc = 0;
-    return units.map((unit) => {
-      const start = sentenceStart + (acc / totalChars) * span;
-      acc += unit.length;
-      const end = sentenceStart + (acc / totalChars) * span;
-      return { text: unit, start, end };
-    });
+    // No word-boundary events from this browser/voice: fall back to an even,
+    // character-weighted spread across the measured sentence duration.
+    return estimateWordTimingsForSentence(units, sentenceStart, sentenceEnd);
   }
 
   const sorted = [...boundaryEvents].sort((a, b) => a.charIndex - b.charIndex);
@@ -226,4 +237,44 @@ export async function recordNarration(opts: RecordNarrationOptions): Promise<Nar
     audioStream.getTracks().forEach((t) => t.stop());
     displayStream.getTracks().forEach((t) => t.stop());
   }
+}
+
+export interface EstimateTimingsOptions {
+  /** Assumed reading speed in characters per second. ~4–5 suits Chinese captions. */
+  charsPerSecond?: number;
+  /** Silent gap inserted between sentences. */
+  pauseBetweenSentences?: number;
+}
+
+/**
+ * Builds caption timings purely from an assumed reading speed, with no audio
+ * and no speech synthesis involved at all. For people who just want the
+ * caption animation without a voiceover — works in any browser, no
+ * permission prompts, no tab-audio capture.
+ */
+export function estimateNarrationTimings(
+  sentences: string[],
+  opts: EstimateTimingsOptions = {},
+): NarrationResult {
+  const charsPerSecond = opts.charsPerSecond ?? 4.5;
+  const pause = opts.pauseBetweenSentences ?? 0.35;
+
+  let cursor = 0;
+  const result: CaptionSentence[] = sentences.map((text) => {
+    const units = splitIntoRevealUnits(text);
+    const charCount = units.reduce((sum, u) => sum + u.length, 0) || 1;
+    const duration = Math.max(0.4, charCount / charsPerSecond);
+    const start = cursor;
+    const end = start + duration;
+    const words = estimateWordTimingsForSentence(units, start, end);
+    cursor = end + pause;
+    return { text, words, start, end };
+  });
+
+  return {
+    audioFile: null,
+    duration: Math.max(0, cursor - pause),
+    sentences: result,
+    timingSource: "estimated",
+  };
 }

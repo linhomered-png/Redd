@@ -39,7 +39,8 @@ export interface CaptionSentence {
 export type NarrationTimingSource = "boundary" | "estimated";
 
 export interface NarrationResult {
-  audioFile: File;
+  /** null when generated in "no voiceover" mode — captions with no audio track. */
+  audioFile: File | null;
   duration: number;
   sentences: CaptionSentence[];
   timingSource: NarrationTimingSource;

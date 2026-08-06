@@ -298,6 +298,11 @@ header h1 {
   opacity: 0.6;
 }
 
+.voiceover-switch {
+  justify-content: flex-start;
+  margin: 0;
+}
+
 .section-title {
   font-size: 1rem;
   margin: 24px 0 10px;

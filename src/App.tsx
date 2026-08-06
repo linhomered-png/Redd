@@ -266,10 +266,10 @@ function App() {
               disabled={!narration || backgroundItems.length === 0 || isBusy}
               onClick={handleGenerateNarrated}
             >
-              {isBusy ? "生成中…" : "使用旁白生成影片"}
+              {isBusy ? "生成中…" : "生成字幕影片"}
             </button>
             {!narration && (
-              <p className="settings-hint">請先在上方產生旁白錄音，再上傳背景照片</p>
+              <p className="settings-hint">請先在上方產生旁白錄音或字幕時間軸，再上傳背景照片</p>
             )}
 
             {isBusy && <ProgressBar status={status} progress={progress} />}

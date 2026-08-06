@@ -132,7 +132,7 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll, hideTr
       </div>
       <p className="settings-hint">
         {hideTransition
-          ? "提示：背景音樂會與旁白混音並自動降低音量，旁白聲音為主。"
+          ? "提示：若有旁白，背景音樂會與旁白混音並自動降低音量；若選擇不要旁白，背景音樂就是影片唯一的聲音。"
           : "提示：影片片段的原始聲音會被靜音，只有這裡上傳的背景音樂會被保留。"}
       </p>
     </div>
