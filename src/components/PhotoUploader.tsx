@@ -3,16 +3,21 @@ import type { DragEvent } from "react";
 
 interface Props {
   onFilesAdded: (files: File[]) => void;
+  /** Restricts which kinds of files are accepted. Defaults to both images and videos. */
+  acceptImages?: boolean;
+  acceptVideos?: boolean;
 }
 
-export function PhotoUploader({ onFilesAdded }: Props) {
+export function PhotoUploader({ onFilesAdded, acceptImages = true, acceptVideos = true }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   function handleFiles(fileList: FileList | null) {
     if (!fileList) return;
     const files = Array.from(fileList).filter(
-      (f) => f.type.startsWith("image/") || f.type.startsWith("video/"),
+      (f) =>
+        (acceptImages && f.type.startsWith("image/")) ||
+        (acceptVideos && f.type.startsWith("video/")),
     );
     if (files.length) onFilesAdded(files);
   }
@@ -36,12 +41,21 @@ export function PhotoUploader({ onFilesAdded }: Props) {
       role="button"
       tabIndex={0}
     >
-      <p>拖曳照片或影片到這裡，或點擊選擇檔案</p>
-      <p className="uploader-hint">支援一次選擇多張 JPG / PNG 圖片與 MP4 / MOV 影片片段</p>
+      <p>
+        拖曳{acceptImages && "照片"}
+        {acceptImages && acceptVideos && "或"}
+        {acceptVideos && "影片"}到這裡，或點擊選擇檔案
+      </p>
+      <p className="uploader-hint">
+        支援一次選擇多張
+        {acceptImages && " JPG / PNG 圖片"}
+        {acceptImages && acceptVideos && " 與"}
+        {acceptVideos && " MP4 / MOV 影片片段"}
+      </p>
       <input
         ref={inputRef}
         type="file"
-        accept="image/*,video/*"
+        accept={[acceptImages && "image/*", acceptVideos && "video/*"].filter(Boolean).join(",")}
         multiple
         hidden
         onChange={(e) => {

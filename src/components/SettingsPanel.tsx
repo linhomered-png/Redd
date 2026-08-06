@@ -11,47 +11,53 @@ interface Props {
   settings: VideoSettings;
   onChange: (settings: VideoSettings) => void;
   onApplyDurationToAll: (duration: number) => void;
+  /** Hides the transition controls — used in narrated-script mode, where frame
+   * timing is already fully derived from the narration and per-clip transitions
+   * don't apply. */
+  hideTransition?: boolean;
 }
 
-export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Props) {
+export function SettingsPanel({ settings, onChange, onApplyDurationToAll, hideTransition }: Props) {
   const resolutionValue = `${settings.resolution.width}x${settings.resolution.height}`;
 
   return (
     <div className="settings-panel">
-      <div className="settings-row">
-        <label>
-          轉場效果
-          <select
-            value={settings.transition}
-            onChange={(e) =>
-              onChange({ ...settings, transition: e.target.value as TransitionType })
-            }
-          >
-            <option value="none">無轉場（直接切換）</option>
-            <option value="fade">淡入淡出</option>
-          </select>
-        </label>
-
-        {settings.transition === "fade" && (
+      {!hideTransition && (
+        <div className="settings-row">
           <label>
-            轉場時長
-            <input
-              type="number"
-              min={0.2}
-              max={3}
-              step={0.1}
-              value={settings.transitionDuration}
+            轉場效果
+            <select
+              value={settings.transition}
               onChange={(e) =>
-                onChange({
-                  ...settings,
-                  transitionDuration: Math.max(0.2, Number(e.target.value) || 0.2),
-                })
+                onChange({ ...settings, transition: e.target.value as TransitionType })
               }
-            />
-            秒
+            >
+              <option value="none">無轉場（直接切換）</option>
+              <option value="fade">淡入淡出</option>
+            </select>
           </label>
-        )}
-      </div>
+
+          {settings.transition === "fade" && (
+            <label>
+              轉場時長
+              <input
+                type="number"
+                min={0.2}
+                max={3}
+                step={0.1}
+                value={settings.transitionDuration}
+                onChange={(e) =>
+                  onChange({
+                    ...settings,
+                    transitionDuration: Math.max(0.2, Number(e.target.value) || 0.2),
+                  })
+                }
+              />
+              秒
+            </label>
+          )}
+        </div>
+      )}
 
       <div className="settings-row">
         <label>
@@ -86,21 +92,23 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
       </div>
 
       <div className="settings-row">
-        <label>
-          批量設定照片時長
-          <input
-            type="number"
-            min={0.2}
-            max={30}
-            step={0.1}
-            placeholder="秒"
-            onBlur={(e) => {
-              const v = Number(e.target.value);
-              if (v > 0) onApplyDurationToAll(v);
-              e.target.value = "";
-            }}
-          />
-        </label>
+        {!hideTransition && (
+          <label>
+            批量設定照片時長
+            <input
+              type="number"
+              min={0.2}
+              max={30}
+              step={0.1}
+              placeholder="秒"
+              onBlur={(e) => {
+                const v = Number(e.target.value);
+                if (v > 0) onApplyDurationToAll(v);
+                e.target.value = "";
+              }}
+            />
+          </label>
+        )}
 
         <label>
           背景音樂（可選）
@@ -123,7 +131,9 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
         )}
       </div>
       <p className="settings-hint">
-        提示：影片片段的原始聲音會被靜音，只有這裡上傳的背景音樂會被保留。
+        {hideTransition
+          ? "提示：背景音樂會與旁白混音並自動降低音量，旁白聲音為主。"
+          : "提示：影片片段的原始聲音會被靜音，只有這裡上傳的背景音樂會被保留。"}
       </p>
     </div>
   );

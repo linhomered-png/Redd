@@ -46,7 +46,13 @@ export async function buildVideo(
     await ffmpeg.writeFile(musicName, await fetchFile(settings.musicFile));
   }
 
-  const args = buildFfmpegArgs(items, settings, inputNames, musicName);
+  let narrationName: string | null = null;
+  if (settings.narrationFile) {
+    narrationName = `narration.${extensionFromFile(settings.narrationFile, "webm")}`;
+    await ffmpeg.writeFile(narrationName, await fetchFile(settings.narrationFile));
+  }
+
+  const args = buildFfmpegArgs(items, settings, inputNames, musicName, narrationName);
 
   const progressHandler = ({ progress }: { progress: number }) => {
     onProgress({ stage: "encoding", ratio: Math.min(1, Math.max(0, progress)) });
@@ -72,6 +78,7 @@ export async function buildVideo(
 
   for (const name of inputNames) await ffmpeg.deleteFile(name);
   if (musicName) await ffmpeg.deleteFile(musicName);
+  if (narrationName) await ffmpeg.deleteFile(narrationName);
   await ffmpeg.deleteFile("output.mp4");
 
   onProgress({ stage: "done", ratio: 1 });
@@ -83,6 +90,7 @@ function buildFfmpegArgs(
   settings: VideoSettings,
   inputNames: string[],
   musicName: string | null,
+  narrationName: string | null,
 ): string[] {
   const useFade = settings.transition === "fade";
   const t = useFade ? settings.transitionDuration : 0;
@@ -96,8 +104,16 @@ function buildFfmpegArgs(
       args.push("-t", `${clipLen}`, "-i", inputNames[i]);
     }
   }
+  let musicIndex = -1;
   if (musicName) {
+    musicIndex = items.length;
+    // Background music loops to cover the full timeline; narration (below) plays once.
     args.push("-stream_loop", "-1", "-i", musicName);
+  }
+  let narrationIndex = -1;
+  if (narrationName) {
+    narrationIndex = items.length + (musicName ? 1 : 0);
+    args.push("-i", narrationName);
   }
 
   const filterParts: string[] = [];
@@ -129,13 +145,26 @@ function buildFfmpegArgs(
     totalDuration = items.reduce((sum, item) => sum + item.duration, 0);
   }
 
+  const hasAudio = musicName !== null || narrationName !== null;
+  if (musicName && narrationName) {
+    // Mix: narration at full volume carries the voice, background music ducked
+    // underneath. normalize=0 keeps amix from automatically halving each input.
+    filterParts.push(`[${narrationIndex}:a]volume=1.0[an]`);
+    filterParts.push(`[${musicIndex}:a]volume=0.22[am]`);
+    filterParts.push(`[an][am]amix=inputs=2:duration=first:normalize=0[aout]`);
+  }
+
   args.push("-filter_complex", filterParts.join(";"));
   args.push("-map", "[vout]");
-  if (musicName) {
-    args.push("-map", `${items.length}:a`);
+  if (musicName && narrationName) {
+    args.push("-map", "[aout]");
+  } else if (narrationName) {
+    args.push("-map", `${narrationIndex}:a`);
+  } else if (musicName) {
+    args.push("-map", `${musicIndex}:a`);
   }
   args.push("-c:v", "libx264", "-preset", "ultrafast", "-t", `${totalDuration}`);
-  if (musicName) {
+  if (hasAudio) {
     args.push("-c:a", "aac", "-b:a", "128k");
   }
   args.push("-y", "output.mp4");
