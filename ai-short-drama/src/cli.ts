@@ -31,7 +31,7 @@ program
   .option("--script-max-tokens <n>", "生成劇本時的 max_tokens 上限", (v) => Number.parseInt(v, 10), 16000)
   .option(
     "--video-provider <name>",
-    `影片片段生成方式：${VIDEO_PROVIDER_NAMES.join(" / ")}（kenburns 免費：AI 生圖＋Ken Burns 動態效果；runway 付費：需要 RUNWAY_API_KEY）`,
+    `影片片段生成方式：${VIDEO_PROVIDER_NAMES.join(" / ")}（kenburns 免費：AI 生圖＋Ken Burns 動態效果；runway 付費：需要 RUNWAY_API_KEY；seedance 付費：ByteDance Seedance 2.0，透過 fal.ai，需要 FAL_KEY）`,
     parseChoice(VIDEO_PROVIDER_NAMES),
     "kenburns",
   )

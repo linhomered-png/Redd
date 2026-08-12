@@ -11,6 +11,12 @@ export const env = {
   runwayVideoModel: process.env["RUNWAY_VIDEO_MODEL"] ?? "gen4_turbo",
   runwayImageModel: process.env["RUNWAY_IMAGE_MODEL"] ?? "gen4_image",
 
+  // fal.ai（--video-provider seedance）—— ByteDance Seedance 2.0，透過 fal.ai 存取
+  falApiKey: process.env["FAL_KEY"] ?? "",
+  falApiBaseUrl: process.env["FAL_API_BASE_URL"] ?? "https://queue.fal.run",
+  seedanceModel: process.env["SEEDANCE_MODEL"] ?? "bytedance/seedance-2.0/text-to-video",
+  seedanceResolution: process.env["SEEDANCE_RESOLUTION"] ?? "720p",
+
   elevenLabsApiKey: process.env["ELEVENLABS_API_KEY"] ?? "",
   elevenLabsVoiceId: process.env["ELEVENLABS_VOICE_ID"] ?? "21m00Tcm4TlvDq8ikWAM",
 

@@ -18,7 +18,10 @@
 | 影片片段 | `--video-provider kenburns`（預設）：免費文生圖（Pollinations.ai）＋ ffmpeg Ken Burns 動態效果 | **免費**，不需金鑰 |
 | 配音 | `--voice-provider edge`（預設）：借用 Microsoft Edge 線上朗讀引擎（`edge-tts`） | **免費**，不需金鑰 |
 
-也可以切換成付費、畫質／音質更好的方案：`--video-provider runway`（Runway ML 圖生視頻）、`--voice-provider elevenlabs`（ElevenLabs TTS）。
+也可以切換成付費、畫質／音質更好的方案：
+- `--video-provider runway`（Runway ML 圖生視頻）
+- `--video-provider seedance`（ByteDance Seedance 2.0，透過 [fal.ai](https://fal.ai) 存取，文生視頻，不需要先產生關鍵幀圖片）
+- `--voice-provider elevenlabs`（ElevenLabs TTS）
 
 > ⚠️ 免費的兩個服務（Pollinations、edge-tts）都是公開、不需認證的第三方服務，
 > 不是正式簽約的付費 API，穩定性與畫質／音質沒有保證，而且**某些網路環境（尤其是
@@ -43,6 +46,7 @@ cp .env.example .env
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | 用 Claude 生成劇本與分鏡腳本 | 必要（除非用 `--mock`） |
 | `RUNWAY_API_KEY` | 只有用 `--video-provider runway` 時才需要 | 選填 |
+| `FAL_KEY` | 只有用 `--video-provider seedance` 時才需要（[fal.ai](https://fal.ai) 的金鑰） | 選填 |
 | `ELEVENLABS_API_KEY` | 只有用 `--voice-provider elevenlabs` 時才需要 | 選填 |
 
 ## 先跑一次 `--mock`，確認環境沒問題
@@ -70,8 +74,12 @@ npm run generate -- \
 只需要 `.env` 裡的 `ANTHROPIC_API_KEY`，其餘全部免費。想換成付費、品質更好的影片／配音服務：
 
 ```bash
-npm run generate -- --topic "..." --video-provider runway --voice-provider elevenlabs
+npm run generate -- --topic "..." --video-provider seedance --voice-provider elevenlabs
 ```
+
+> Seedance 2.0 是透過 [fal.ai](https://fal.ai) 存取的（`FAL_KEY`），不是官方火山引擎／火山方舟。
+> 如果你已經有火山引擎的帳號想直接接官方 API，那是不同的認證方式（AK/SK 簽名），
+> 需要另外改 `src/providers/videoProvider.ts`，跟這裡預設接的 fal.ai 不是同一套。
 
 執行完成後，`output/<劇名>/` 底下會有：
 
@@ -92,7 +100,7 @@ npm run generate -- --topic "..." --video-provider runway --voice-provider eleve
 | `--bgm <path>` | 背景音樂檔案路徑 | 無 |
 | `--voice-id <id>` | 配音的語音 ID／voice name | 用 `.env` 裡對應 provider 的設定 |
 | `--script-max-tokens <n>` | 劇本生成的 max_tokens 上限 | 16000 |
-| `--video-provider <name>` | `kenburns`（免費）或 `runway`（付費） | kenburns |
+| `--video-provider <name>` | `kenburns`（免費）／`runway`（付費）／`seedance`（付費，Seedance 2.0） | kenburns |
 | `--voice-provider <name>` | `edge`（免費）或 `elevenlabs`（付費） | edge |
 | `--mock` | 不呼叫任何外部服務，全程用假資料測試 | false |
 
@@ -114,7 +122,7 @@ src/
     buildSubtitles.ts     — 產生 SRT 字幕
     runPipeline.ts         — 串起以上所有步驟
   providers/
-    videoProvider.ts      — VideoProvider 介面：KenBurns（免費）／Runway（付費）／Mock
+    videoProvider.ts      — VideoProvider 介面：KenBurns（免費）／Runway（付費）／Seedance 2.0（付費，透過 fal.ai）／Mock
     imageProvider.ts      — ImageProvider 介面：Pollinations（免費，KenBurns 用）
     voiceProvider.ts      — VoiceProvider 介面：edge-tts（免費）／ElevenLabs（付費）／Mock
   lib/ffmpeg.ts           — ffmpeg / ffprobe 的薄封裝（含 Ken Burns zoompan 效果）
