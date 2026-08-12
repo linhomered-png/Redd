@@ -5,15 +5,13 @@ interface Props {
   onFilesAdded: (files: File[]) => void;
 }
 
-export function PhotoUploader({ onFilesAdded }: Props) {
+export function SceneUploader({ onFilesAdded }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   function handleFiles(fileList: FileList | null) {
     if (!fileList) return;
-    const files = Array.from(fileList).filter(
-      (f) => f.type.startsWith("image/") || f.type.startsWith("video/"),
-    );
+    const files = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
     if (files.length) onFilesAdded(files);
   }
 
@@ -36,12 +34,12 @@ export function PhotoUploader({ onFilesAdded }: Props) {
       role="button"
       tabIndex={0}
     >
-      <p>拖曳照片或影片到這裡，或點擊選擇檔案</p>
-      <p className="uploader-hint">支援一次選擇多張 JPG / PNG 圖片與 MP4 / MOV 影片片段</p>
+      <p>拖曳角色 / 場景照片到這裡，或點擊選擇檔案</p>
+      <p className="uploader-hint">每張照片會變成一個場景，可依序加入多張、之後再拖曳排序</p>
       <input
         ref={inputRef}
         type="file"
-        accept="image/*,video/*"
+        accept="image/*"
         multiple
         hidden
         onChange={(e) => {

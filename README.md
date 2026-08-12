@@ -1,29 +1,33 @@
-# 照片转视频
+# 短劇快剪
 
-将多张照片拼接成一个 MP4 视频，完全在浏览器本地完成（基于 [ffmpeg.wasm](https://ffmpegwasm.netlify.app/)，无需上传照片到服务器）。
+一個免費的短劇影片剪輯小工具：上傳角色 / 場景照片，為每一幕輸入角色台詞，選擇字幕風格與直式短劇規格，一鍵生成 MP4 —— 完全在瀏覽器本地完成（基於 [ffmpeg.wasm](https://ffmpegwasm.netlify.app/)，照片與台詞不會上傳到伺服器）。
+
+包含一個介紹頁（說明工具能做什麼、誠實標示這不是 AI 自動生成演出的服務）與一個真正可用的場景化編輯工具。
 
 ## 功能
 
-- 拖拽或选择上传多张照片
-- 拖拽调整照片顺序，逐张或批量设置停留时长
-- 转场效果：无转场 / 淡入淡出
-- 可选背景音乐（自动循环以匹配视频长度）
-- 可选分辨率（720p / 1080p / 竖屏 / 方形）与帧率
-- 生成后直接预览并下载 MP4
+- 介紹頁 + 工具頁：從介紹頁「開始製作」直接進入編輯器（`#tool`），可隨時返回
+- 場景化編輯：每張照片是一幕，拖曳排序、逐幕設定停留時長
+- 角色台詞字幕：每一幕可填角色名與台詞，自動排版、自動換行（支援中英文混排）
+- 兩種字幕風格：字幕列（戲劇感黑底漸層）／對話框（漫劇風格泡泡），也可關閉字幕
+- 直式短劇規格（720×1280）為預設，也可切換高畫質直式、方形、橫式
+- 轉場效果（無轉場 / 淡入淡出）與可選背景音樂（自動循環對齊片長）
+- 即時手機外框預覽（含短劇 App 風格的進度條、按讚 / 留言 / 分享圖示，僅供編輯時參考，不會出現在輸出影片中）
+- 生成後直接預覽並下載 MP4
 
-## 开发
+## 開發
 
 ```bash
 npm install
 npm run dev
 ```
 
-`predev` / `prebuild` 会自动将 `@ffmpeg/core` 的 wasm 引擎文件复制到 `public/ffmpeg-core`（该目录已加入 `.gitignore`，不会提交到仓库），使应用无需依赖任何第三方 CDN。
+`predev` / `prebuild` 會自動將 `@ffmpeg/core` 的 wasm 引擎文件複製到 `public/ffmpeg-core`（該目錄已加入 `.gitignore`，不會提交到倉庫），使應用無需依賴任何第三方 CDN。
 
 ```bash
 npm run build
 ```
 
-## 技术栈
+## 技術棧
 
-React + TypeScript + Vite，视频合成使用 `@ffmpeg/ffmpeg` / `@ffmpeg/core`（ffmpeg 编译到 WebAssembly，运行在浏览器 Worker 中）。
+React + TypeScript + Vite，影片合成使用 `@ffmpeg/ffmpeg` / `@ffmpeg/core`（ffmpeg 編譯到 WebAssembly，運行在瀏覽器 Worker 中）；字幕直接用 Canvas 畫在照片上再交給 ffmpeg 合成，不需要任何後端或 AI 影片生成服務。

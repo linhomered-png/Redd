@@ -12,10 +12,23 @@ export interface MediaItem {
 
 export type TransitionType = "none" | "fade";
 
+export type CaptionStyle = "bar" | "bubble" | "none";
+
 export interface VideoSettings {
   transition: TransitionType;
   transitionDuration: number;
   resolution: { width: number; height: number };
   fps: number;
   musicFile: File | null;
+  captionStyle: CaptionStyle;
+}
+
+/** One shot in the short drama: a photo plus the dialogue spoken over it. */
+export interface Scene {
+  id: string;
+  file: File;
+  url: string;
+  speaker: string;
+  line: string;
+  duration: number;
 }

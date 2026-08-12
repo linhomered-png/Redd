@@ -1,10 +1,16 @@
-import type { TransitionType, VideoSettings } from "../types";
+import type { CaptionStyle, TransitionType, VideoSettings } from "../types";
 
 const RESOLUTIONS: { label: string; width: number; height: number }[] = [
-  { label: "720p 橫式 (1280×720)", width: 1280, height: 720 },
-  { label: "1080p 橫式 (1920×1080)", width: 1920, height: 1080 },
-  { label: "直式 (720×1280)", width: 720, height: 1280 },
+  { label: "直式短劇 (720×1280)", width: 720, height: 1280 },
+  { label: "直式高畫質 (1080×1920)", width: 1080, height: 1920 },
   { label: "方形 (1080×1080)", width: 1080, height: 1080 },
+  { label: "橫式 (1280×720)", width: 1280, height: 720 },
+];
+
+const CAPTION_STYLES: { value: CaptionStyle; label: string }[] = [
+  { value: "bar", label: "字幕列（戲劇感黑底字幕）" },
+  { value: "bubble", label: "對話框（漫劇風格泡泡）" },
+  { value: "none", label: "不加字幕" },
 ];
 
 interface Props {
@@ -18,6 +24,41 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
 
   return (
     <div className="settings-panel">
+      <div className="settings-row">
+        <label>
+          字幕風格
+          <select
+            value={settings.captionStyle}
+            onChange={(e) => onChange({ ...settings, captionStyle: e.target.value as CaptionStyle })}
+          >
+            {CAPTION_STYLES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          影片規格
+          <select
+            value={resolutionValue}
+            onChange={(e) => {
+              const found = RESOLUTIONS.find(
+                (r) => `${r.width}x${r.height}` === e.target.value,
+              );
+              if (found) onChange({ ...settings, resolution: found });
+            }}
+          >
+            {RESOLUTIONS.map((r) => (
+              <option key={r.label} value={`${r.width}x${r.height}`}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
       <div className="settings-row">
         <label>
           轉場效果
@@ -51,27 +92,6 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
             秒
           </label>
         )}
-      </div>
-
-      <div className="settings-row">
-        <label>
-          影片解析度
-          <select
-            value={resolutionValue}
-            onChange={(e) => {
-              const found = RESOLUTIONS.find(
-                (r) => `${r.width}x${r.height}` === e.target.value,
-              );
-              if (found) onChange({ ...settings, resolution: found });
-            }}
-          >
-            {RESOLUTIONS.map((r) => (
-              <option key={r.label} value={`${r.width}x${r.height}`}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </label>
 
         <label>
           畫格率
@@ -87,10 +107,10 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
 
       <div className="settings-row">
         <label>
-          批量設定照片時長
+          批量設定場景時長
           <input
             type="number"
-            min={0.2}
+            min={0.5}
             max={30}
             step={0.1}
             placeholder="秒"
@@ -107,9 +127,7 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
           <input
             type="file"
             accept="audio/*"
-            onChange={(e) =>
-              onChange({ ...settings, musicFile: e.target.files?.[0] ?? null })
-            }
+            onChange={(e) => onChange({ ...settings, musicFile: e.target.files?.[0] ?? null })}
           />
         </label>
         {settings.musicFile && (
@@ -123,7 +141,7 @@ export function SettingsPanel({ settings, onChange, onApplyDurationToAll }: Prop
         )}
       </div>
       <p className="settings-hint">
-        提示：影片片段的原始聲音會被靜音，只有這裡上傳的背景音樂會被保留。
+        提示：字幕會直接畫在畫面上一起輸出；背景音樂會自動循環以對齊影片長度。
       </p>
     </div>
   );
