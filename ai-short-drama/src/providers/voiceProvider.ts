@@ -4,6 +4,7 @@ import { pipeline } from "node:stream/promises";
 import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 import { env } from "../config.js";
 import { generateSilentAudio } from "../lib/ffmpeg.js";
+import { describeFreeServiceFailure } from "../lib/networkError.js";
 
 export const VOICE_PROVIDER_NAMES = ["edge", "elevenlabs"] as const;
 export type VoiceProviderName = (typeof VOICE_PROVIDER_NAMES)[number];
@@ -44,12 +45,13 @@ export class EdgeTtsVoiceProvider implements VoiceProvider {
       await pipeline(audioStream, createWriteStream(outputPath));
       return true;
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
       throw new Error(
-        `edge-tts 配音失敗：${message}\n` +
-          "這個免費配音方式借用 Microsoft Edge 的線上朗讀服務，某些網路環境（尤其是雲端主機）" +
-          "可能連不上或被擋。可以改用 --voice-provider elevenlabs（需要 ELEVENLABS_API_KEY），" +
-          "或先用 --mock 測試其餘流程。",
+        describeFreeServiceFailure({
+          serviceName: "edge-tts 免費配音",
+          error,
+          fallbackHint:
+            "可以改用 --voice-provider elevenlabs（需要 ELEVENLABS_API_KEY），或先用 --mock 測試其餘流程是否正常。",
+        }),
       );
     } finally {
       tts.close();
