@@ -1,3 +1,6 @@
+import type { VideoProviderName } from "./providers/videoProvider.js";
+import type { VoiceProviderName } from "./providers/voiceProvider.js";
+
 export interface PipelineOptions {
   /** 短劇主題／題材，例如「重生復仇」 */
   topic: string;
@@ -15,10 +18,14 @@ export interface PipelineOptions {
   mock: boolean;
   /** 背景音樂檔案路徑，選填 */
   bgmPath?: string;
-  /** ElevenLabs 語音 ID，選填（覆蓋 .env 設定） */
+  /** 配音的語音 ID／voice name，選填（覆蓋 .env 設定） */
   voiceId?: string;
   /** 生成劇本時使用的 max_tokens 上限 */
   scriptMaxTokens: number;
+  /** 影片片段生成方式：kenburns（免費）或 runway（付費） */
+  videoProvider: VideoProviderName;
+  /** 配音生成方式：edge（免費）或 elevenlabs（付費） */
+  voiceProvider: VoiceProviderName;
 }
 
 /** 每個鏡頭裡的一句台詞 */

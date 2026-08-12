@@ -2,7 +2,11 @@ import { writeFile } from "node:fs/promises";
 import { env, requireEnv } from "../config.js";
 import { logger } from "../logger.js";
 import type { Shot } from "../types.js";
-import { generateTestClip } from "../lib/ffmpeg.js";
+import { generateKenBurnsClip, generateTestClip } from "../lib/ffmpeg.js";
+import { PollinationsImageProvider, type ImageProvider } from "./imageProvider.js";
+
+export const VIDEO_PROVIDER_NAMES = ["kenburns", "runway"] as const;
+export type VideoProviderName = (typeof VIDEO_PROVIDER_NAMES)[number];
 
 export interface VideoProvider {
   /** 為單一鏡頭生成一段影片片段，寫到 outputPath（mp4）。 */
@@ -24,6 +28,41 @@ export class MockVideoProvider implements VideoProvider {
       fps: 30,
       colorIndex: shotIndex,
     });
+  }
+}
+
+/**
+ * 完全免費的影片生成方式：用免費文生圖 API（預設 Pollinations.ai）依 visualPrompt
+ * 生成一張關鍵幀圖片，再用 ffmpeg 的 Ken Burns 效果（緩慢縮放／平移）把靜態圖片變成
+ * 動態片段。不需要任何影片生成服務的金鑰。
+ *
+ * 畫質與動態效果自然比不上真正的 AI 影片生成模型（Runway／可靈／即夢等），
+ * 但完全免費，適合先把整條流程跑起來，之後想升級畫質再切換 --video-provider runway。
+ */
+export class KenBurnsVideoProvider implements VideoProvider {
+  private readonly imageProvider: ImageProvider;
+
+  constructor(imageProvider: ImageProvider = new PollinationsImageProvider()) {
+    this.imageProvider = imageProvider;
+  }
+
+  async generateClip(shot: Shot, outputPath: string, shotIndex: number): Promise<void> {
+    logger.info(`[鏡頭 ${shot.shotNumber}] 免費生圖中（Pollinations.ai）…`);
+    const imagePath = `${outputPath}.keyframe.png`;
+    await this.imageProvider.generateImage(shot.visualPrompt, imagePath, shot.shotNumber);
+
+    logger.info(`[鏡頭 ${shot.shotNumber}] 套用 Ken Burns 動態效果…`);
+    await generateKenBurnsClip({
+      imagePath,
+      outputPath,
+      durationSeconds: shot.durationSeconds,
+      width: env.imageWidth,
+      height: env.imageHeight,
+      fps: 30,
+      // 交替使用放大／縮小，讓連續鏡頭的動態效果不會一成不變
+      zoomIn: shotIndex % 2 === 0,
+    });
+    logger.success(`[鏡頭 ${shot.shotNumber}] 影片片段完成（免費：生圖＋Ken Burns）→ ${outputPath}`);
   }
 }
 
@@ -149,6 +188,14 @@ export class RunwayVideoProvider implements VideoProvider {
   }
 }
 
-export function createVideoProvider(mock: boolean): VideoProvider {
-  return mock ? new MockVideoProvider() : new RunwayVideoProvider();
+export function createVideoProvider(mock: boolean, provider: VideoProviderName): VideoProvider {
+  if (mock) {
+    return new MockVideoProvider();
+  }
+  switch (provider) {
+    case "kenburns":
+      return new KenBurnsVideoProvider();
+    case "runway":
+      return new RunwayVideoProvider();
+  }
 }

@@ -14,6 +14,14 @@ export const env = {
   elevenLabsApiKey: process.env["ELEVENLABS_API_KEY"] ?? "",
   elevenLabsVoiceId: process.env["ELEVENLABS_VOICE_ID"] ?? "21m00Tcm4TlvDq8ikWAM",
 
+  // 免費文生圖（Pollinations.ai，不需要金鑰）—— 用於 --video-provider kenburns
+  pollinationsModel: process.env["POLLINATIONS_MODEL"] ?? "flux",
+  imageWidth: Number.parseInt(process.env["IMAGE_WIDTH"] ?? "1080", 10),
+  imageHeight: Number.parseInt(process.env["IMAGE_HEIGHT"] ?? "1920", 10),
+
+  // 免費配音（edge-tts，借用 Microsoft Edge 的線上朗讀引擎，不需要金鑰）—— 用於 --voice-provider edge
+  edgeTtsVoice: process.env["EDGE_TTS_VOICE"] ?? "zh-TW-HsiaoChenNeural",
+
   ffmpegPath: process.env["FFMPEG_PATH"],
   ffprobePath: process.env["FFPROBE_PATH"],
 };

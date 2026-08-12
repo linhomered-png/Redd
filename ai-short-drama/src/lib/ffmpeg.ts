@@ -90,6 +90,52 @@ export async function generateSilentAudio(outputPath: string, durationSeconds: n
 }
 
 /**
+ * 把一張靜態圖片轉成帶有 Ken Burns 效果（緩慢縮放＋平移）的動態影片片段。
+ * 完全在本機用 ffmpeg 的 zoompan filter 完成，不需要任何影片生成 API。
+ */
+export async function generateKenBurnsClip(options: {
+  imagePath: string;
+  outputPath: string;
+  durationSeconds: number;
+  width: number;
+  height: number;
+  fps: number;
+  /** true＝緩慢放大，false＝從放大狀態緩慢縮小回原尺寸 */
+  zoomIn: boolean;
+}): Promise<void> {
+  const frames = Math.max(2, Math.round(options.durationSeconds * options.fps));
+  // zoompan 在小圖上做次像素縮放容易頓格，先把圖片放大成較大的畫布再縮放，效果會平滑很多
+  const canvasWidth = options.width * 2;
+  const canvasHeight = options.height * 2;
+  const maxZoom = 1.3;
+
+  const zoomExpr = options.zoomIn
+    ? `min(zoom+0.0015,${maxZoom})`
+    : `if(eq(on,0),${maxZoom},max(zoom-0.0015,1.0))`;
+
+  await runFfmpeg([
+    "-loop",
+    "1",
+    "-i",
+    options.imagePath,
+    "-vf",
+    [
+      `scale=${canvasWidth}:${canvasHeight}:force_original_aspect_ratio=increase`,
+      `crop=${canvasWidth}:${canvasHeight}`,
+      `zoompan=z='${zoomExpr}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=${options.width}x${options.height}:fps=${options.fps}`,
+      "format=yuv420p",
+    ].join(","),
+    "-t",
+    String(options.durationSeconds),
+    "-c:v",
+    "libx264",
+    "-pix_fmt",
+    "yuv420p",
+    options.outputPath,
+  ]);
+}
+
+/**
  * 產生一段純色卡＋文字的測試影片（mock 模式使用，不需要任何外部 API）。
  *
  * 注意：許多發行版的 ffmpeg 靜態編譯版（包含 ffmpeg-static 使用的版本）沒有內建

@@ -36,8 +36,8 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
   await writeFile(scriptPath, JSON.stringify(script, null, 2), "utf-8");
   logger.info(`劇本已存檔 → ${scriptPath}`);
 
-  const videoProvider = createVideoProvider(options.mock);
-  const voiceProvider = createVoiceProvider(options.mock);
+  const videoProvider = createVideoProvider(options.mock, options.videoProvider);
+  const voiceProvider = createVoiceProvider(options.mock, options.voiceProvider);
 
   const episodeVideoPaths: string[] = [];
   for (const episode of script.episodes) {
