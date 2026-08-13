@@ -11,13 +11,11 @@ three times:
                         missing opening ID)
     2) the FIXED spec → passes, and the gate hands back caption times it computed
                         from segment indexes (you never hand-type timecodes)
-    3) YOUR OWN band  → the same 31s spec that the default rules reject, accepted
-                        after overriding the thresholds — because the shipped
-                        numbers are an EXAMPLE calibration, not a universal law
-    4) ANOTHER PLATFORM → the same 31s spec again, this time accepted with no
-                        overrides at all, just `platform="ig_reels"`: the 26-44s
-                        dead zone is a YouTube-Shorts calibration and blocking it
-                        everywhere would be a FALSE block
+    3) ANOTHER PLATFORM → a 31s spec the default `yt_shorts` band rejects (it lands
+                        in the 25-45s dead zone), accepted with no code changes at
+                        all — just `spec["platform"] = "ig_reels"`: the dead zone is
+                        a YouTube-Shorts calibration and blocking it everywhere would
+                        be a FALSE block
 
 Note the S-O line in the reports: it is a **warning, not a failure**. Warnings
 tell you something and let the build through; only `[FAIL]` stops it.
@@ -29,6 +27,13 @@ Needs: Python 3.9+ only. **No ffmpeg, no Pillow, no numpy, no real footage** —
 this file uses itself as the stand-in "clip" so the gate's file-exists check has
 something real to look at. (The one-command driver `src/shorts_autopilot.py` does
 need ffmpeg + Pillow + numpy; the gate itself never does.)
+
+Threshold source of truth: the gate has no per-call `rules=` override — the
+duration band is selected per platform via `spec["platform"]` against the
+module-level `PLATFORM_RULES` table; first-cut / white-first thresholds
+(`FIRST_CUT_MAX`, `NONWHITE_MAX_RATIO`) are fixed module constants. Recalibrating
+means editing `src/longform_maker/shorts_gate.py` on your own 3-5 best Shorts,
+not passing a dict at call time.
 """
 import os
 import sys
@@ -38,7 +43,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "src"))
 sys.path.insert(0, os.path.join(HERE, "..", "src", "longform_maker"))
 
-from shorts_gate import DEFAULT_RULES, gate_shorts  # noqa: E402
+from shorts_gate import (  # noqa: E402
+    DEFAULT_PLATFORM,
+    FIRST_CUT_MAX,
+    NONWHITE_MAX_RATIO,
+    PLATFORM_RULES,
+    gate_shorts,
+)
 
 # The gate checks that every segment file really exists. No footage needed for a
 # demo — point every segment at this script itself.
@@ -59,9 +70,9 @@ GLOSS = {
 }
 
 
-def show(title, spec, rules=None):
+def show(title, spec):
     """Run the gate once and print a human-readable report."""
-    ok, rep = gate_shorts(spec, rules)
+    ok, rep = gate_shorts(spec)
     print("\n" + "=" * 64)
     print("%s  ->  %s" % (title, "PASS" if ok else "FAIL"))
     print("=" * 64)
@@ -110,11 +121,21 @@ def broken():
 
 
 def fixed():
-    """Same footage plan, all three breaks repaired."""
+    """Same footage plan, all three breaks repaired.
+
+    Note the shorter place/what text and one-caption-per-segment layout: S-C
+    caps segment 0 at 2.0s, which only leaves ~1.7s of on-screen time for its
+    caption — S-R (added 2026-08-06, "captions you can't finish reading") then
+    caps that at 7 chars/sec. Two long English captions crammed onto one 2.0s
+    segment (the kit's own ~3-4 chars/sec calibration is for burned-in Chinese
+    subtitles) can't satisfy S-C and S-R at once, so "what" moves to segment
+    1's own caption instead — the exact fallback S-A documents (seg0's 2nd
+    caption OR seg1's 1st caption).
+    """
     return dict(
         name="short_demo_fixed",
-        place="Riverside Market",
-        what="a 40-year-old noodle stall",
+        place="River Mkt",
+        what="40-Year Stall",
         addr="Riverside Market | 12 Example Road",
         segs=[
             (CLIP, 4.0, 2.0),    # first cut now 2.0s
@@ -124,10 +145,9 @@ def fixed():
             (CLIP, 2.4, 1.6),    # loop: 2.4 + 1.6 = 4.0 == first segment's in-point
         ],                       # 13.4s total — inside the band
         caps_by_seg=[
-            (0, [("Riverside Market", "gold")], "hook"),      # who/where
-            (0, [("a 40-year-old noodle stall", "white")], "sub"),   # what is this
-            (1, [("hand-pulled every morning", "white")], "sub"),
-            (2, [("the broth simmers 8 hours", "white")], "sub"),
+            (0, [("River Mkt", "gold")], "hook"),           # who/where (S-A: contains place)
+            (1, [("40-Year Stall", "white")], "sub"),       # what is this (S-A: contains what)
+            (2, [("Broth 8hr Simmer", "white")], "sub"),
             (3, [("USD 3 a bowl", "white")], "sub"),
         ],
         bgm_folder="<your-bgm-subfolder>",
@@ -135,7 +155,7 @@ def fixed():
 
 
 def long_format():
-    """A 31s cut: legal for some formats, rejected by the shipped example band."""
+    """A 31s cut: legal on platforms with no dead zone, rejected on yt_shorts."""
     spec = fixed()
     spec["name"] = "short_demo_long"
     spec["segs"] = [
@@ -150,23 +170,22 @@ def long_format():
 
 def main():
     print(__doc__.strip().splitlines()[0])
-    print("shipped example calibration: %.0f-%.0fs band, first cut <=%.1fs, "
-          "non-white captions <=%.0f%%"
-          % (DEFAULT_RULES["dur_min"], DEFAULT_RULES["dur_max"],
-             DEFAULT_RULES["first_cut_max"], DEFAULT_RULES["nonwhite_max_ratio"] * 100))
+    yt = PLATFORM_RULES[DEFAULT_PLATFORM]
+    print("shipped example calibration (platform=%s): %.0f-%.0fs band, "
+          "first cut <=%.1fs, non-white captions <=%.0f%%"
+          % (DEFAULT_PLATFORM, yt["dur_min"], yt["dur_max"],
+             FIRST_CUT_MAX, NONWHITE_MAX_RATIO * 100))
 
-    ok_bad, rep_bad = show("1) BROKEN spec (default rules)", broken())
-    ok_fix, _ = show("2) FIXED spec (default rules)", fixed())
+    ok_bad, rep_bad = show("1) BROKEN spec (default platform)", broken())
+    ok_fix, _ = show("2) FIXED spec (default platform)", fixed())
 
-    # Same 31s spec, three times: rejected by the example band, accepted by your
-    # own thresholds, and accepted again by simply declaring another platform.
-    show("3a) 31s spec (default rules)", long_format())
-    my_rules = {"dur_min": 26.0, "dur_max": 60.0, "dur_deadzone": None}
-    ok_long, _ = show("3b) 31s spec (YOUR calibration: %s)" % my_rules, long_format(), my_rules)
+    # Same 31s spec, twice: rejected by the default yt_shorts band (dead zone),
+    # accepted on a platform with no dead zone — no code changes, just the field.
+    show("3a) 31s spec (platform=%s)" % DEFAULT_PLATFORM, long_format())
 
     reels = long_format()
-    reels["platform"] = "ig_reels"       # no `rules=` at all — just say where it ships
-    ok_reels, _ = show("4) same 31s spec, platform='ig_reels' (no overrides)", reels)
+    reels["platform"] = "ig_reels"       # no override dict — just say where it ships
+    ok_reels, _ = show("3b) same 31s spec, platform='ig_reels' (no overrides)", reels)
 
     print("\n" + "-" * 64)
     print("Recap")
@@ -175,19 +194,18 @@ def main():
           % (len(rep_bad["fails"]),
              ", ".join(f.split()[0] for f in rep_bad["fails"])))
     print("  fixed spec passes and returns caption timings it derived itself")
-    print("  the SAME 31s cut passes once you supply your own band")
-    print("  ...and passes with no overrides at all once you name the platform:")
-    print("  the 26-44s dead zone is a YouTube-Shorts number, not a law of nature")
+    print("  ...and the SAME 31s cut passes once you name the platform:")
+    print("  the 25-45s dead zone is a YouTube-Shorts number, not a law of nature")
     print("  S-O is a WARN, never a block - a rule that fires on every normal cut")
     print("  gets ignored, so caption rhythm reports itself instead of judging you")
     print()
-    print("Make it yours: the numbers in DEFAULT_RULES came from one genre's")
-    print("measurements. Re-calibrate on YOUR 3-5 best performing Shorts, pass the")
-    print("result as `rules=` (see src/longform_maker/shorts_gate.py), and confirm")
-    print("your 3 worst ones still get blocked.")
+    print("Make it yours: PLATFORM_RULES / FIRST_CUT_MAX / NONWHITE_MAX_RATIO in")
+    print("src/longform_maker/shorts_gate.py came from one genre's measurements.")
+    print("Re-calibrate on YOUR 3-5 best performing Shorts by editing those")
+    print("constants directly, and confirm your 3 worst ones still get blocked.")
 
     # Exit non-zero if the demo itself stopped behaving as documented.
-    return 0 if (not ok_bad and ok_fix and ok_long and ok_reels) else 1
+    return 0 if (not ok_bad and ok_fix and ok_reels) else 1
 
 
 if __name__ == "__main__":

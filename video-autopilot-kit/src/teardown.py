@@ -52,6 +52,82 @@ BANDS = {
 }
 
 
+# ── RECONSTRUCTED（本檔重建區塊，非上游原始碼）─────────────────────────────
+# examples/06_teardown.py 與 knowledge/vertical-teardown-method.md 都引用
+# rhythm_stats() / pace_profile() / ocr_status() / OPTIONAL_PKGS /
+# CAPTION_DRIVEN_RATIO，但截至上游 v0.19.0（含）release，src/teardown.py
+# 從未包含這幾個符號 —— 這半個檔案疑似上游漏發布（純算術的那一半，見檔頭
+# docstring 對照 examples/README.md 的描述）。
+#
+# 以下是依 examples/06_teardown.py 的 assert／docstring 反推出的最小可用實作：
+# 介面（回傳欄位、edge case 行為）以該 demo 檔的斷言為準；CAPTION_DRIVEN_RATIO
+# 取自 teardown() 既有的行內判讀門檻（見下方 `r > 1.15`），求跟已發布行為一致。
+# **不保證等於原作者未發布的真正實作** —— 純門檻數字部分是反推，非原文照抄。
+OPTIONAL_PKGS = ("rapidocr-onnxruntime", "opencc-python-reimplemented")
+CAPTION_DRIVEN_RATIO = 1.15   # 與 teardown() 既有判讀門檻一致（見下方 `r > 1.15`）
+
+
+def rhythm_stats(times, dur):
+    """單一時間序列（剪點或換句時間戳）的節奏統計，回傳 dict：
+
+        n          -- 時間點數
+        per_min    -- n / dur * 60（dur<=0 時回 0.0，不拋 ZeroDivisionError）
+        gap_median -- 相鄰間隔中位數；少於 2 個時間點（0 個間隔）時為 None
+        gap_stdev  -- 相鄰間隔母體標準差；同上為 None
+    """
+    n = len(times)
+    per_min = (n / dur * 60) if dur > 0 else 0.0
+    gaps = [round(b - a, 4) for a, b in zip(times, times[1:])]
+    return {
+        "n": n,
+        "per_min": per_min,
+        "gap_median": st.median(gaps) if gaps else None,
+        "gap_stdev": st.pstdev(gaps) if gaps else None,
+    }
+
+
+def pace_profile(cut_times, cap_times, dur):
+    """比較剪點節奏與字幕（換句）節奏，判讀節奏主體是剪輯還是文字。回傳 dict：
+
+        cuts / captions -- 各自的 rhythm_stats()
+        ratio            -- captions.per_min / cuts.per_min；沒偵測到剪點
+                             （cuts.per_min == 0）時為 None
+        driver           -- "captions" / "cuts" / "unknown"（ratio 為 None 時）
+        verdict          -- 一行判讀字串
+    """
+    c = rhythm_stats(cut_times, dur)
+    k = rhythm_stats(cap_times, dur)
+    if c["per_min"] > 0:
+        ratio = k["per_min"] / c["per_min"]
+        driver = "captions" if ratio > CAPTION_DRIVEN_RATIO else "cuts"
+        verdict = ("caption-driven (%.2fx) -- pace is carried by text, not cuts" % ratio
+                   if driver == "captions" else
+                   "cut-driven (%.2fx) -- pace is carried by the edit" % ratio)
+    else:
+        ratio = None
+        driver = "unknown"
+        verdict = "no cuts detected -- cannot compute a captions/cuts ratio"
+    return {"cuts": c, "captions": k, "ratio": ratio, "driver": driver, "verdict": verdict}
+
+
+def ocr_status():
+    """回傳 (rapidocr 是否可用, opencc 是否可用, 安裝指令)。兩者都在時 hint==""。"""
+    try:
+        import rapidocr_onnxruntime  # noqa: F401
+        ocr_ok = True
+    except ImportError:
+        ocr_ok = False
+    try:
+        import opencc  # noqa: F401
+        s2t_ok = True
+    except ImportError:
+        s2t_ok = False
+    missing = [p for p, ok in zip(OPTIONAL_PKGS, (ocr_ok, s2t_ok)) if not ok]
+    hint = ("pip install " + " ".join(missing)) if missing else ""
+    return ocr_ok, s2t_ok, hint
+# ── /RECONSTRUCTED ─────────────────────────────────────────────────────────
+
+
 def _run(argv):
     return subprocess.run(argv, capture_output=True, text=True, errors="replace")
 
