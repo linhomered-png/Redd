@@ -27,3 +27,10 @@ npm run build
 ## 技术栈
 
 React + TypeScript + Vite，视频合成使用 `@ffmpeg/ffmpeg` / `@ffmpeg/core`（ffmpeg 编译到 WebAssembly，运行在浏览器 Worker 中）。
+
+
+## 附带项目:video-autopilot-kit
+
+[`video-autopilot-kit/`](video-autopilot-kit/) 目录内置了开源项目 [Hao0321/video-autopilot-kit](https://github.com/Hao0321/video-autopilot-kit)(MIT 授权)的完整拷贝——一套 Python 编写的 YouTube / Shorts 影片自动化框架(CapCut 草稿自动化 + ffmpeg pipeline + 方法论知识库)。
+
+它与本仓库的照片转视频网页工具**技术栈完全独立**(Python CLI 工具 vs 浏览器端 React 应用),两者不共用代码、不互相调用,仅作为独立子目录并存于同一仓库。使用方式请见其自带的 [README.md](video-autopilot-kit/README.md) 与 [SETUP.md](video-autopilot-kit/SETUP.md)。
