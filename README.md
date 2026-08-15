@@ -1,29 +1,29 @@
-# 照片转视频
+# 照片轉影片
 
-将多张照片拼接成一个 MP4 视频，完全在浏览器本地完成（基于 [ffmpeg.wasm](https://ffmpegwasm.netlify.app/)，无需上传照片到服务器）。
+將多張照片拼接成一個 MP4 影片，完全在瀏覽器本地完成（基於 [ffmpeg.wasm](https://ffmpegwasm.netlify.app/)，無需上傳照片到伺服器）。
 
 ## 功能
 
-- 拖拽或选择上传多张照片
-- 拖拽调整照片顺序，逐张或批量设置停留时长
-- 转场效果：无转场 / 淡入淡出
-- 可选背景音乐（自动循环以匹配视频长度）
-- 可选分辨率（720p / 1080p / 竖屏 / 方形）与帧率
-- 生成后直接预览并下载 MP4
+- 拖曳或選擇上傳多張照片
+- 拖曳調整照片順序，逐張或批量設定停留時長
+- 轉場效果：無轉場 / 淡入淡出
+- 可選背景音樂（自動循環以符合影片長度）
+- 可選解析度（720p / 1080p / 直式 / 方形）與畫格率
+- 生成後直接預覽並下載 MP4
 
-## 开发
+## 開發
 
 ```bash
 npm install
 npm run dev
 ```
 
-`predev` / `prebuild` 会自动将 `@ffmpeg/core` 的 wasm 引擎文件复制到 `public/ffmpeg-core`（该目录已加入 `.gitignore`，不会提交到仓库），使应用无需依赖任何第三方 CDN。
+`predev` / `prebuild` 會自動將 `@ffmpeg/core` 的 wasm 引擎檔案複製到 `public/ffmpeg-core`（該目錄已加入 `.gitignore`，不會提交到儲存庫），使應用無需依賴任何第三方 CDN。
 
 ```bash
 npm run build
 ```
 
-## 技术栈
+## 技術棧
 
-React + TypeScript + Vite，视频合成使用 `@ffmpeg/ffmpeg` / `@ffmpeg/core`（ffmpeg 编译到 WebAssembly，运行在浏览器 Worker 中）。
+React + TypeScript + Vite，影片合成使用 `@ffmpeg/ffmpeg` / `@ffmpeg/core`（ffmpeg 編譯到 WebAssembly，運行在瀏覽器 Worker 中）。
